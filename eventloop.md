@@ -119,6 +119,148 @@ console.log('5 - sync end');
 | Event Loop      | Scheduler of task execution      | Always running                |
 
 
+###  🌀 All Components in the Node.js Event Loop
+
+The Node.js Event Loop has **6 main phases**, plus a **microtask queue**. Here's how it works:
+
+---
+
+### 🔸 1. **Timers Phase**
+
+* Executes callbacks scheduled by:
+
+  * `setTimeout()`
+  * `setInterval()`
+* These callbacks run **once the timer has expired** (not immediately after the delay).
+
+```js
+setTimeout(() => {
+  console.log('Timers Phase: setTimeout');
+}, 0);
+```
+
+---
+
+### 🔸 2. **Pending Callbacks Phase**
+
+* Executes I/O callbacks **deferred to the next loop iteration**.
+* Includes:
+
+  * Some TCP errors
+  * `setTimeout()`/`setImmediate()` in specific edge cases
+
+> Not commonly used directly in user code.
+
+---
+
+### 🔸 3. **Idle, Prepare Phase** *(Internal Use Only)*
+
+* Internal phase used by Node.js.
+* Prepares the system for the next poll phase.
+
+> You won’t interact with this phase directly.
+
+---
+
+### 🔸 4. **Poll Phase**
+
+* Retrieves new I/O events.
+* Executes callbacks for I/O like:
+
+  * `fs.readFile()`
+  * `net`, `http`, `DNS` callbacks
+* If there are no timers or `setImmediate()`, it **waits (blocks)** here for I/O.
+
+```js
+const fs = require('fs');
+fs.readFile(__filename, () => {
+  console.log('Poll Phase: fs.readFile');
+});
+```
+
+---
+
+### 🔸 5. **Check Phase**
+
+* Executes `setImmediate()` callbacks.
+
+```js
+setImmediate(() => {
+  console.log('Check Phase: setImmediate');
+});
+```
+
+---
+
+### 🔸 6. **Close Callbacks Phase**
+
+* Executes callbacks for closed resources:
+
+  * `socket.on('close', ...)`
+  * `stream.on('close', ...)`
+
+```js
+const net = require('net');
+const server = net.createServer();
+server.on('close', () => {
+  console.log('Close Callbacks Phase: server closed');
+});
+server.close();
+```
+
+---
+
+## 🔹 Microtasks Queue (Runs After Each Phase)
+
+Includes:
+
+* `process.nextTick()` → runs **before all other microtasks**
+* `Promise.then()` / `await` → runs **after `process.nextTick()`**
+
+```js
+process.nextTick(() => {
+  console.log('Microtask: process.nextTick');
+});
+
+Promise.resolve().then(() => {
+  console.log('Microtask: Promise.then');
+});
+```
+
+---
+
+## 🔸 Diagram: Event Loop Phases (Simplified Flow)
+
+```text
+| Start of Tick |
+      ↓
+[process.nextTick()]
+      ↓
+[Promise.then() / await]
+      ↓
+1. Timers
+2. Pending Callbacks
+3. Idle, Prepare
+4. Poll
+5. Check
+6. Close Callbacks
+      ↓
+| Next Tick |
+```
+
+---
+
+## ✅ Summary Table
+
+| Phase             | Callback Types                         | Priority Order          |
+| ----------------- | -------------------------------------- | ----------------------- |
+| Microtasks        | `process.nextTick()`, `Promise.then()` | 🔝 Highest              |
+| Timers            | `setTimeout()`, `setInterval()`        | Normal (based on delay) |
+| Pending Callbacks | Internal deferred I/O                  | Rarely used manually    |
+| Idle/Prepare      | Internal (V8/Node.js prep work)        | -                       |
+| Poll              | I/O (fs, net, http...)                 | Medium (may block)      |
+| Check             | `setImmediate()`                       | After Poll              |
+| Close Callbacks   | `.on('close')`                         | Last phase              |
 
 
-Would you like a **diagram**, or a version of this explanation tailored to **Node.js** instead of the browser?
+
