@@ -47,7 +47,21 @@
 | **Macrotask Queue**                       | Lower priority: `setTimeout`, `setInterval`, DOM events, I/O                |
 | **Job Queue** (alias for Microtask Queue) | Used in specs to refer to microtasks                                        |
 
----
+## What the Event Loop Does
+The event loop is a mechanism that:
+
+Monitors the Call Stack – the stack of functions currently being executed.
+
+Monitors the Task Queues – like the Microtask Queue and Macrotask Queue.
+
+Keeps checking:
+
+If the call stack is empty, meaning JavaScript isn't executing anything right now...
+
+It will take the next task from one of the queues and push it onto the call stack to be executed.
+
+ So, the event loop acts like a traffic controller — it manages what code runs when, especially after asynchronous events.
+`
 
 ## 🕒 Order of Execution
 
