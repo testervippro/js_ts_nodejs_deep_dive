@@ -932,6 +932,74 @@ VM515:14 Sum result after await: 15
 ```
 ---
 
+* A **Promise is asynchronous** in how it executes its `.then()` or `await` callbacks.
+* But **creating a Promise and the executor function runs synchronously**.
+
+---
+
+### Explanation:
+
+1. **Promise executor runs synchronously:**
+
+When you write:
+
+```js
+const p = new Promise((resolve, reject) => {
+  console.log("Executor starts");
+  resolve(42);
+  console.log("Executor ends");
+});
+```
+
+Output will be:
+
+```
+Executor starts
+Executor ends
+```
+
+This means the code inside the Promise constructor runs **immediately and synchronously**.
+
+---
+
+2. **Then handlers run asynchronously:**
+
+Even if you call `resolve()` immediately, the `.then()` callbacks execute **later**, asynchronously after the current call stack finishes.
+
+Example:
+
+```js
+const p = new Promise((resolve) => {
+  resolve(42);
+  console.log("Promise resolved");
+});
+
+p.then(value => {
+  console.log("Then handler:", value);
+});
+
+console.log("End of script");
+```
+
+Output:
+
+```
+Promise resolved
+End of script
+Then handler: 42
+```
+
+Notice that `"Then handler: 42"` runs **after** `"End of script"`, even though the Promise was resolved synchronously.
+
+---
+
+### Summary:
+
+| Aspect              | Synchronous or Asynchronous?                |
+| ------------------- | ------------------------------------------- |
+| Promise constructor | **Synchronous** (executor runs immediately) |
+| `.then` or `await`  | **Asynchronous** (runs after current stack) |
+
 ## ⏳ Waiting for a Timeout
 
 ### Using Callback:
