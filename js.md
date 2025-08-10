@@ -908,7 +908,28 @@ myPromise.then(
   function(error) { myDisplayer(error); }
 );
 ```
+Example with state and status
+```
+function asyncSum(numbers) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const sum = numbers.reduce((a, b) => a + b, 0);
+      resolve(sum);
+    }, 1000);
+  });
+}
 
+const resultPromise = asyncSum([1, 2, 3, 4, 5]);
+console.log("Async sum of numbers:", resultPromise);  // Promise { <pending> }
+
+resultPromise.then(result => {
+  console.log("Sum result after await:", result);  // Sum result after await: 15
+});
+
+VM515:11 Async sum of numbers: Promise {<pending>}[[Prototype]]: Promise[[PromiseState]]: "fulfilled"[[PromiseResult]]: 15
+Promise {<pending>}[[Prototype]]: Promise[[PromiseState]]: "fulfilled"[[PromiseResult]]: undefined
+VM515:14 Sum result after await: 15
+```
 ---
 
 ## ⏳ Waiting for a Timeout
