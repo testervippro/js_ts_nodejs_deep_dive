@@ -87,11 +87,42 @@ Promise.resolve().then(() => {
   console.log('3 - promise'); // microtask
 });
 
+// Creating a new Promise
+const promise = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    if (true) {
+      resolve("resolved");
+    } else {
+      reject("rejected");
+    }
+  }, 0);
+});
+
+// Handling the promise with then/catch
+promise.then((message) => {
+  console.log("The promise is finally: " + message);
+}).catch((msg) => {
+  console.log("The promise was rejected: " + msg);
+});
+
+// Async/await version
+async function handlePromise() {
+  try {
+    const msg = await promise;
+    console.log("Resolved with message: " + msg);
+  } catch (error) {
+    console.log("Caught error: " + error);
+  }
+}
+handlePromise();
+
+// Using queueMicrotask
 queueMicrotask(() => {
   console.log('4 - microtask'); // microtask
 });
 
 console.log('5 - sync end');
+
 ```
 
 ---
