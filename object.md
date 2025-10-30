@@ -1,123 +1,160 @@
-Excellent point 💡 — `Object.keys()` behaves differently when dealing with **nested objects** or **non-enumerable properties**.
-Here’s the **updated and extended JavaScript `Object` Methods Cheat Sheet**, including **special cases for `Object.keys()`** (with examples that cover deep and nested structures).
+Excellent question 💡 — comparing **native JavaScript `Object` methods** (like `Object.keys()`, `Object.entries()`, etc.) with **Lodash** equivalents reveals some very important differences in behavior, especially when working with **nested objects**, **arrays**, or **non-enumerable properties**.
+
+Let’s go step-by-step.
 
 ---
 
-# 💎 **JavaScript `Object` Methods Cheat Sheet (with Nested Object Examples)**
+# ⚖️ **Comparison: Native `Object` vs Lodash (`_.`)**
+
+| **Feature / Use Case**               | **Native JS (`Object`)**                              | **Lodash (`_`)**                                                              | **Key Differences / Notes**                                                            |
+| ------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 🔹 **Get Keys (Shallow)**            | `Object.keys(obj)`                                    | `_.keys(obj)`                                                                 | Both return **enumerable** own property names only. No difference for shallow objects. |
+| 🔹 **Get Keys (Deep)**               | ❌ Manual recursion required                           | ✅ `_.keysIn()` (includes inherited) or `_.flatMapDeep()` for nested traversal | Lodash offers deeper and easier recursion options (`_.flatMapDeep`, `_.mapKeys`).      |
+| 🔹 **Get Values**                    | `Object.values(obj)`                                  | `_.values(obj)`                                                               | Both return enumerable values (only first level).                                      |
+| 🔹 **Get Entries (key-value pairs)** | `Object.entries(obj)`                                 | `_.toPairs(obj)`                                                              | Same output format. Lodash supports array-like and objects interchangeably.            |
+| 🔹 **Convert back to object**        | `Object.fromEntries(pairs)`                           | `_.fromPairs(pairs)`                                                          | Equivalent functionality. Lodash is slightly more flexible with arrays.                |
+| 🔹 **Deep Keys**                     | ❌ Requires recursion (manual)                         | ✅ `_.keysIn()` + `_.forOwn` / `_.forIn` / custom `_.flatMapDeep`              | Lodash simplifies recursive key extraction.                                            |
+| 🔹 **Own vs Inherited Keys**         | `Object.keys()` = own only                            | `_.keysIn()` = own + inherited                                                | Lodash adds the inherited keys (like `for...in`).                                      |
+| 🔹 **Has Property**                  | `Object.hasOwn(obj, key)` / `obj.hasOwnProperty(key)` | `_.has(obj, path)`                                                            | Lodash supports **deep paths** like `'user.info.name'`, native does not.               |
+| 🔹 **Get Property Value**            | `obj[prop]`                                           | `_.get(obj, 'path.to.prop', defaultValue)`                                    | Lodash safely handles **undefined/null paths** and provides default fallback.          |
+| 🔹 **Set Property Value**            | `obj.prop = value`                                    | `_.set(obj, 'a.b.c', value)`                                                  | Lodash supports **deep assignment** — auto-creates nested structure.                   |
+| 🔹 **Check Equality**                | `Object.is(a, b)` / `a === b`                         | `_.isEqual(a, b)`                                                             | Lodash does **deep comparison** for objects, arrays, nested structures.                |
+| 🔹 **Clone Object**                  | `structuredClone(obj)` / `{...obj}`                   | `_.clone()` / `_.cloneDeep()`                                                 | Lodash provides **deep cloning**, which native JS lacks (except `structuredClone`).    |
+| 🔹 **Merge Objects**                 | `Object.assign(target, src)`                          | `_.merge(target, src)`                                                        | Lodash performs **deep merge**; native does only shallow copy.                         |
+| 🔹 **Pick Properties**               | `{ key: obj.key }` (manual)                           | `_.pick(obj, ['key1', 'key2'])`                                               | Lodash simplifies selective key extraction.                                            |
+| 🔹 **Omit Properties**               | Manual destructuring                                  | `_.omit(obj, ['key'])`                                                        | Lodash makes removing specific keys easy.                                              |
+| 🔹 **Map Over Object**               | `Object.entries(obj).map(...)`                        | `_.mapValues(obj, fn)` / `_.mapKeys(obj, fn)`                                 | Lodash directly supports object mapping.                                               |
+| 🔹 **Flatten Keys (Deep)**           | Custom recursive function                             | `_.flatMapDeep(obj)`                                                          | Lodash provides built-in recursion utilities.                                          |
 
 ---
 
-## 📘 **1. Static Methods of `Object`**
-
-*(Used like `Object.methodName(obj)`)*
-
-| **Method**                                        | **Description**                                                 | **Example**                                                                                                                                       |
-| ------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`Object.assign(target, ...sources)`**           | Copies properties from one or more sources into a target object | `js const target = {a: 1}; const source = {b: 2}; Object.assign(target, source); console.log(target); // {a: 1, b: 2} `                           |
-| **`Object.create(proto)`**                        | Creates a new object with the specified prototype               | `js const proto = {greet() {return "Hi";}}; const obj = Object.create(proto); console.log(obj.greet()); // "Hi" `                                 |
-| **`Object.defineProperty(obj, key, descriptor)`** | Defines or modifies a property with custom settings             | `js const obj = {}; Object.defineProperty(obj, 'age', {value: 25, writable: false}); console.log(obj.age); // 25 `                                |
-| **`Object.defineProperties(obj, props)`**         | Defines multiple properties at once                             | `js const user = {}; Object.defineProperties(user, { name: {value: 'Alice'}, age: {value: 30} }); console.log(user.name, user.age); // Alice 30 ` |
-| **`Object.entries(obj)`**                         | Returns an array of `[key, value]` pairs                        | `js const person = {name: 'Alice', age: 30}; console.log(Object.entries(person)); // [['name','Alice'], ['age',30]] `                             |
-| **`Object.fromEntries(arr)`**                     | Converts an array of `[key, value]` pairs into an object        | `js const entries = [['x', 10], ['y', 20]]; console.log(Object.fromEntries(entries)); // {x:10, y:20} `                                           |
-| **`Object.freeze(obj)`**                          | Freezes an object (no add/remove/change allowed)                | `js const car = {brand: 'Toyota'}; Object.freeze(car); car.brand = 'Honda'; console.log(car.brand); // Toyota `                                   |
-| **`Object.seal(obj)`**                            | Seals an object (no add/remove, but existing values can change) | `js const book = {title: 'JS'}; Object.seal(book); book.title = 'Python'; console.log(book.title); // Python `                                    |
-| **`Object.getOwnPropertyDescriptor(obj, prop)`**  | Gets descriptor for a property                                  | `js const obj = {x: 5}; console.log(Object.getOwnPropertyDescriptor(obj, 'x')); `                                                                 |
-| **`Object.getOwnPropertyDescriptors(obj)`**       | Gets all property descriptors                                   | `js const obj = {a: 1, b: 2}; console.log(Object.getOwnPropertyDescriptors(obj)); `                                                               |
-| **`Object.getOwnPropertyNames(obj)`**             | Returns all property names, even non-enumerable                 | `js const obj = Object.create({}, {hidden: {value: 42, enumerable: false}}); console.log(Object.getOwnPropertyNames(obj)); // ['hidden'] `        |
-| **`Object.getOwnPropertySymbols(obj)`**           | Returns all symbol properties                                   | `js const sym = Symbol('id'); const obj = {[sym]: 123}; console.log(Object.getOwnPropertySymbols(obj)); `                                         |
-| **`Object.getPrototypeOf(obj)`**                  | Returns the prototype of an object                              | `js const arr = []; console.log(Object.getPrototypeOf(arr) === Array.prototype); // true `                                                        |
-| **`Object.setPrototypeOf(obj, proto)`**           | Sets the prototype of an object                                 | `js const proto = {sayHi() {return 'Hi';}}; const obj = {}; Object.setPrototypeOf(obj, proto); console.log(obj.sayHi()); // Hi `                  |
-| **`Object.hasOwn(obj, prop)`**                    | Checks if property exists directly on the object                | `js const user = {name: 'Bob'}; console.log(Object.hasOwn(user, 'name')); // true `                                                               |
-| **`Object.is(value1, value2)`**                   | Safer alternative to `===` (handles `NaN` and `-0`)             | `js console.log(Object.is(NaN, NaN)); // true console.log(Object.is(-0, 0)); // false `                                                           |
-| **`Object.isExtensible(obj)`**                    | Checks if object can be extended                                | `js const obj = {}; console.log(Object.isExtensible(obj)); // true `                                                                              |
-| **`Object.preventExtensions(obj)`**               | Prevents adding new properties                                  | `js const obj = {a: 1}; Object.preventExtensions(obj); obj.b = 2; console.log(obj.b); // undefined `                                              |
-| **`Object.values(obj)`**                          | Returns enumerable property values                              | `js const obj = {x: 1, y: 2}; console.log(Object.values(obj)); // [1, 2] `                                                                        |
-
----
-
-### 🌟 **Special Focus: `Object.keys(obj)`**
-
-| **Description**                                                            | **Example**                                                                                                                                                                                                                                                                                                                                                                 |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Returns **enumerable** property names of an object (only first-level keys) | `js const obj = { a: 1, b: 2 }; console.log(Object.keys(obj)); // ['a', 'b'] `                                                                                                                                                                                                                                                                                              |
-| ❗ **Nested objects:** It does **not** go inside nested levels              | `js const nested = { user: { name: 'Alice', age: 30 }, active: true }; console.log(Object.keys(nested)); // ['user', 'active'] console.log(Object.keys(nested.user)); // ['name', 'age'] `                                                                                                                                                                                  |
-| 🚫 **Non-enumerable properties** are **ignored**                           | `js const obj = {}; Object.defineProperty(obj, 'hidden', { value: 42, enumerable: false }); console.log(Object.keys(obj)); // [] `                                                                                                                                                                                                                                          |
-| ✅ Works with arrays (returns indices as strings)                           | `js const arr = ['a', 'b', 'c']; console.log(Object.keys(arr)); // ['0', '1', '2'] `                                                                                                                                                                                                                                                                                        |
-| ✅ Can be used recursively to flatten nested keys                           | ``js function deepKeys(obj, prefix = '') {   return Object.keys(obj).flatMap(k =>     typeof obj[k] === 'object' && obj[k] !== null       ? deepKeys(obj[k], `${prefix}${k}.`)       : `${prefix}${k}`   ); } const data = { user: { name: 'Alice', info: { city: 'Tokyo' } }, active: true }; console.log(deepKeys(data)); // ['user.name', 'user.info.city', 'active'] `` |
-
----
-
-## 📗 **2. Instance Methods of `Object` (from `Object.prototype`)**
-
-| **Method**                       | **Description**                                | **Example**                                                                                                     |
-| -------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `obj.hasOwnProperty(prop)`       | Checks if a property is directly on the object | `js const obj = {a: 1}; console.log(obj.hasOwnProperty('a')); // true `                                         |
-| `obj.isPrototypeOf(obj2)`        | Checks if `obj` is in `obj2`’s prototype chain | `js const parent = {}; const child = Object.create(parent); console.log(parent.isPrototypeOf(child)); // true ` |
-| `obj.propertyIsEnumerable(prop)` | Checks if a property is enumerable             | `js const obj = {a: 1}; console.log(obj.propertyIsEnumerable('a')); // true `                                   |
-| `obj.toString()`                 | Returns string representation                  | `js const arr = [1,2,3]; console.log(arr.toString()); // "1,2,3" `                                              |
-| `obj.valueOf()`                  | Returns primitive value                        | `js const num = new Number(5); console.log(num.valueOf()); // 5 `                                               |
-| `obj.toLocaleString()`           | Locale-aware string                            | `js const num = 123456.789; console.log(num.toLocaleString('de-DE')); // "123.456,789" `                        |
-
----
-
-## 🧪 **Example: Using `Object.keys()` with Nested Objects**
+## 🧠 **Example: `Object.keys()` vs `_.keys()` vs `_.keysIn()`**
 
 ```js
-const company = {
-  name: 'TechCorp',
-  departments: {
-    dev: { employees: 25 },
-    hr: { employees: 5 }
-  }
-};
+const data = Object.create({ inherited: true });
+data.name = "Alice";
+data.info = { age: 30, city: "Tokyo" };
 
-console.log(Object.keys(company));        // ['name', 'departments']
-console.log(Object.keys(company.departments)); // ['dev', 'hr']
+// Native
+console.log(Object.keys(data));   // ['name', 'info']
 
-// Recursively extract all keys:
-function getAllKeys(obj) {
-  let keys = [];
-  for (const key of Object.keys(obj)) {
-    keys.push(key);
-    if (typeof obj[key] === 'object' && obj[key] !== null) {
-      keys = keys.concat(getAllKeys(obj[key]).map(k => `${key}.${k}`));
-    }
-  }
-  return keys;
+// Lodash _.keys() - same as Object.keys
+console.log(_.keys(data));        // ['name', 'info']
+
+// Lodash _.keysIn() - includes inherited
+console.log(_.keysIn(data));      // ['name', 'info', 'inherited']
+```
+
+---
+
+## 🧩 **Deep Path Handling Example**
+
+### ✅ Lodash
+
+```js
+const user = { profile: { address: { city: "Osaka" } } };
+
+console.log(_.get(user, "profile.address.city"));       // "Osaka"
+console.log(_.get(user, "profile.phone", "No phone"));  // "No phone"
+
+_.set(user, "profile.address.zip", "540-0000");
+console.log(user.profile.address.zip); // "540-0000"
+```
+
+### ❌ Native JS
+
+```js
+// Causes error if path doesn’t exist:
+console.log(user.profile.phone.number); // ❌ TypeError
+
+// Manual check required:
+console.log(user?.profile?.phone ?? "No phone");
+```
+
+---
+
+## 🧩 **Deep Keys Example**
+
+### Native (Manual Recursive)
+
+```js
+function deepKeys(obj, prefix = '') {
+  return Object.keys(obj).flatMap(k =>
+    typeof obj[k] === 'object' && obj[k] !== null
+      ? deepKeys(obj[k], `${prefix}${k}.`)
+      : `${prefix}${k}`
+  );
 }
 
-console.log(getAllKeys(company));
-// ['name', 'departments.dev.employees', 'departments.hr.employees']
+const data = { user: { name: 'Bob', address: { city: 'Tokyo' } }, active: true };
+console.log(deepKeys(data));
+// ['user.name', 'user.address.city', 'active']
 ```
 
----
-
-## 🧠 **Pro Tip: Enumerate All Properties (Including Prototypes)**
+### Lodash (Simpler)
 
 ```js
-let allProps = new Set();
-let obj = yourObject;
+function lodashDeepKeys(obj, prefix = '') {
+  return _.flatMap(_.keys(obj), k =>
+    _.isObject(obj[k]) ? lodashDeepKeys(obj[k], `${prefix}${k}.`) : `${prefix}${k}`
+  );
+}
 
-do {
-  Object.getOwnPropertyNames(obj).forEach(p => allProps.add(p));
-} while (obj = Object.getPrototypeOf(obj));
-
-console.log([...allProps]);
+console.log(lodashDeepKeys(data));
+// ['user.name', 'user.address.city', 'active']
 ```
 
 ---
 
-## ⚡ **Quick Recap**
+## ⚡ **Performance & Behavior Summary**
 
-| Concept                       | Summary                                               |
-| ----------------------------- | ----------------------------------------------------- |
-| 🧱 **Static methods**         | Used with `Object.` prefix                            |
-| 🔗 **Instance methods**       | Used on object instances                              |
-| 🧊 **`freeze()` vs `seal()`** | `freeze()` = fully locked; `seal()` = no add/remove   |
-| 🧩 **`is()`**                 | Safer than `===` for `NaN` and `-0`                   |
-| 🧭 **`hasOwn()`**             | Modern alternative to `hasOwnProperty()`              |
-| 🔍 **`Object.keys()`**        | Shallow by default — use recursion for nested objects |
+| **Feature**               | **Native `Object`**    | **Lodash (`_`)**                  |
+| ------------------------- | ---------------------- | --------------------------------- |
+| Shallow operations        | Fastest (built-in C++) | Slightly slower                   |
+| Deep operations           | Requires recursion     | Easier with built-ins             |
+| Handles nested paths      | ❌ No                   | ✅ Yes (`_.get`, `_.set`, `_.has`) |
+| Safe for `undefined/null` | ❌ No                   | ✅ Yes                             |
+| Supports default values   | ❌ No                   | ✅ Yes                             |
+| Works with arrays too     | Partially              | ✅ Fully                           |
+| Includes inherited props  | ❌ Only via manual      | ✅ `_.keysIn()`                    |
+| Library dependency        | None                   | Requires Lodash import            |
 
 ---
 
-Would you like me to generate a **visual diagram** (tree view) showing how `Object.keys()` expands across nested objects, or a **PDF version** of this full cheatsheet?
+## 🧭 **Quick Visual Summary**
+
+| Task                           | Native                 | Lodash                     |
+| ------------------------------ | ---------------------- | -------------------------- |
+| Get shallow keys               | `Object.keys(obj)`     | `_.keys(obj)`              |
+| Get all keys (own + inherited) | manual                 | `_.keysIn(obj)`            |
+| Get deep value safely          | manual                 | `_.get(obj, 'a.b.c')`      |
+| Set deep value                 | manual                 | `_.set(obj, 'a.b.c', 123)` |
+| Check nested path              | manual                 | `_.has(obj, 'a.b.c')`      |
+| Deep clone                     | `structuredClone(obj)` | `_.cloneDeep(obj)`         |
+| Deep merge                     | manual recursion       | `_.merge(obj1, obj2)`      |
+| Pick keys                      | manual                 | `_.pick(obj, ['x', 'y'])`  |
+| Omit keys                      | manual                 | `_.omit(obj, ['x', 'y'])`  |
+
+---
+
+## 🧩 **When to Use Which**
+
+| Use Case                                         | Recommendation                             |
+| ------------------------------------------------ | ------------------------------------------ |
+| Simple, shallow key/value extraction             | ✅ **Native `Object` methods**              |
+| Working with nested structures                   | ✅ **Lodash (`_.get`, `_.set`, `_.merge`)** |
+| Defensive programming (avoid `undefined` errors) | ✅ **Lodash**                               |
+| High-performance operations (tight loops)        | ✅ **Native**                               |
+| Readability & maintainability                    | ✅ **Lodash**                               |
+
+---
+
+### TL;DR Summary
+
+> * Use **`Object.keys()`** for **simple objects**.
+> * Use **`_.get()`**, **`_.set()`**, or **`_.merge()`** for **nested or unpredictable data**.
+> * Lodash simplifies deep work; native JS is faster for shallow operations.
+
+---
+
+Would you like me to show a **side-by-side visual comparison table** (JS vs Lodash) for *deep object manipulation* (like nested merge, clone, and get/set paths)? It’s great for QA/test automation reference sheets.
